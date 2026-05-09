@@ -27,10 +27,10 @@ async function startServer() {
     const redisConnected = await validateRedisConnection();
 
     if (!redisConnected) {
-      console.warn('⚠️ Redis is not connected - application will run without caching');
+      console.warn(' Redis is not connected - application will run without caching');
       console.warn('   To enable Redis, add these to your .env file:');
       console.warn('   REDIS_HOST=your-redis-host');
-      console.warn('   REDIS_PORT=6379');
+      console.warn('   REDIS_PORT=6380');
       console.warn('   REDIS_PASSWORD=your-redis-password');
       console.warn('   See .env.example for configuration examples');
     } else {
@@ -38,7 +38,7 @@ async function startServer() {
     }
     // Start the server
   } catch (error) {
-    console.error('❌ Startup failed:', error.message);
+    console.error('Startup failed:', error.message);
     process.exit(1);
   }
 }

@@ -8,7 +8,6 @@ if (env.redisHost && env.redisPassword) {
   redisClient = new Redis({
     host: env.redisHost,
     port: Number(env.redisPort),
-    username: 'default',
     password: env.redisPassword,
     tls: {},
     lazyConnect: true,
@@ -17,7 +16,7 @@ if (env.redisHost && env.redisPassword) {
 
   // Enhanced event listeners for better monitoring
   redisClient.on('error', (err) => {
-    console.error('❌ Redis connection error:', err.message);
+    console.error('Redis connection error:', err.message);
     console.error('Redis error details:', err);
   });
 
@@ -30,7 +29,7 @@ if (env.redisHost && env.redisPassword) {
   });
 
   redisClient.on('close', () => {
-    console.warn('⚠️ Redis connection closed');
+    console.warn('Redis connection closed');
   });
 
   redisClient.on('reconnecting', (ms) => {
@@ -45,7 +44,7 @@ if (env.redisHost && env.redisPassword) {
 // Connection validation function
 async function validateRedisConnection() {
   if (!redisClient) {
-    console.warn('⚠️ Redis client not initialized - missing REDIS_HOST or REDIS_PASSWORD');
+    console.warn('Redis client not initialized - missing REDIS_HOST or REDIS_PASSWORD');
     return false;
   }
 
@@ -76,10 +75,10 @@ async function validateRedisConnection() {
     return false;
   } catch (error) {
     if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
-      console.error('❌ Redis connection timeout - server may be unreachable');
+      console.error('Redis connection timeout - server may be unreachable');
       console.error('   Check your REDIS_HOST, REDIS_PORT, and network connectivity');
     } else {
-      console.error('❌ Redis connection validation failed:', error.message);
+      console.error('Redis connection validation failed:', error.message);
     }
     return false;
   }
