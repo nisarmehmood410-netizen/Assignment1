@@ -10,7 +10,7 @@ if (env.redisHost && env.redisPassword) {
     port: Number(env.redisPort),
     username: 'default',
     password: env.redisPassword,
-    tls: {}, // 🔥 REQUIRED for Azure Redis (SSL)
+    tls: {}, 
     lazyConnect: true,
     connectTimeout: 10000
   });
