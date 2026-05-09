@@ -20,7 +20,7 @@ async function startServer() {
     // Connect to database first
     console.log('📦 Connecting to Cosmos DB...');
     await cosmosDB.connect();
-    console.log('✅ Cosmos DB connected successfully');
+    console.log(' Cosmos DB connected successfully');
 
     // Validate Redis connection
     console.log(' Validating Redis connection...');
