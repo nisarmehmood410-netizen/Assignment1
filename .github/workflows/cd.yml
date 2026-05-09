@@ -1,0 +1,87 @@
+name: CD pipeline
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Debug - Show workspace contents
+        run: |
+          echo " Current workspace contents:"
+          ls -la
+          echo ""
+          echo " Dockerfile contents:"
+          cat Dockerfile
+          echo ""
+          echo "Package.json contents:"
+          cat package.json
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Debug - Docker Buildx info
+        run: |
+          echo " Docker Buildx info:"
+          docker buildx version
+          docker buildx ls
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.D_USERNAME }}
+          password: ${{ secrets.D_PASSWORD }}
+
+      - name: Debug - Verify Docker login
+        run: |
+          echo " Docker login verification:"
+          docker info | grep Username || true
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: nisarulster/nisar:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Debug - Verify Docker image
+        run: |
+          echo " Verifying Docker image:"
+          docker pull nisarulster/nisar:latest
+          docker images nisarulster/nisar
+
+      - name: Debug - Check Azure credentials
+        env:
+          AZURE_PUBLISH_PROFILE: ${{ secrets.AZURE_PUBLISH_PROFILE }}
+        run: |
+          echo " Checking Azure credentials..."
+
+          if [ -z "$AZURE_PUBLISH_PROFILE" ]; then
+            echo " AZURE_PUBLISH_PROFILE is missing"
+            exit 1
+          else
+            echo "AZURE_PUBLISH_PROFILE is set"
+          fi
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: assignmentsss
+          publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
+          images: nisarulster/nisar:latest
+
+      - name: Debug - Verify deployment
+        run: |
+          echo " Deployment completed successfully"
+          echo "Web App: assignmentsss"
