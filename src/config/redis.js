@@ -10,14 +10,16 @@ if (env.redisHost && env.redisPassword) {
     port: Number(env.redisPort),
     password: env.redisPassword,
     tls: {},
-    retryStrategy: null,
-    connectTimeout: 10000,
+    retryStrategy: () => null, // Disable all retries
+    connectTimeout: 5000, // Shorter timeout for faster startup if failing
     maxRetriesPerRequest: 0,
     enableOfflineQueue: false,
     reconnectOnError: () => false
   });
 
   redisClient.on('error', (err) => {
+    // Only log error once if possible, but ioredis might emit multiple errors
+    // during the initial connection phase.
     console.error('Redis connection error:', err.message);
   });
 
@@ -34,7 +36,7 @@ if (env.redisHost && env.redisPassword) {
   });
 
   redisClient.on('end', () => {
-    console.warn('🔌 Redis connection ended');
+    console.warn('🔌 Redis connection ended - no more retries will occur');
   });
 }
 
@@ -45,18 +47,46 @@ async function validateRedisConnection() {
     return false;
   }
 
-  try {
-    // Just check the status or perform a quick ping if it's already attempting to connect
-    if (redisClient.status === 'ready') {
-      const pong = await redisClient.ping();
-      return pong === 'PONG';
-    }
+  // If already ready, we are good
+  if (redisClient.status === 'ready') {
+    return true;
+  }
 
-    // If it's not ready, it will NOT automatically retry due to retryStrategy: null
-    // We just return false as we don't want to force a manual connection with retries
+  // If it's already in a terminal state, it won't connect
+  if (redisClient.status === 'end') {
     return false;
+  }
+
+  try {
+    // Wait for the connection to either succeed or fail
+    return await new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        cleanup();
+        console.warn('Redis connection validation timed out');
+        resolve(false);
+      }, 6000);
+
+      const onReady = () => {
+        cleanup();
+        resolve(true);
+      };
+
+      const onError = () => {
+        cleanup();
+        resolve(false);
+      };
+
+      const cleanup = () => {
+        clearTimeout(timeout);
+        redisClient.removeListener('ready', onReady);
+        redisClient.removeListener('error', onError);
+      };
+
+      redisClient.once('ready', onReady);
+      redisClient.once('error', onError);
+    });
   } catch (error) {
-    console.error('Redis connection validation failed:', error.message);
+    console.error('Redis connection validation error:', error.message);
     return false;
   }
 }

@@ -15,10 +15,10 @@ async function startServer() {
     console.log('🚀 Starting application...');
 
     app.listen(env.port, () => {
-      console.log(`🌐 Server running on port ${env.port}`);
+      console.log(`Server running on port ${env.port}`);
     });
     // Connect to database first
-    console.log('📦 Connecting to Cosmos DB...');
+    console.log('Connecting to Cosmos DB...');
     await cosmosDB.connect();
     console.log(' Cosmos DB connected successfully');
 
