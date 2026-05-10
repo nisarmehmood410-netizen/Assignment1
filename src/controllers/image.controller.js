@@ -22,7 +22,7 @@ function normalizePeople(people) {
       if (Array.isArray(parsed)) {
         return parsed.map((name) => String(name).trim()).filter(Boolean);
       }
-    } catch (e) {
+    } catch {
       // Ignore parse error and fallback to comma separation
     }
   }
@@ -39,7 +39,9 @@ function normalizePeople(people) {
  * @returns {Promise<Array>} - List of image JSON objects with creator attached
  */
 async function enrichImagesWithCreators(images) {
-  if (!images || images.length === 0) return [];
+  if (!images || images.length === 0) {
+    return [];
+  }
 
   const creatorIds = [...new Set(images.map((img) => img.creatorId))];
   const creators = await Promise.all(creatorIds.map((id) => User.findById(id)));
