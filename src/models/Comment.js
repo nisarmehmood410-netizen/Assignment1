@@ -45,7 +45,7 @@ class Comment {
       querySpec.query += ` OFFSET 0 LIMIT ${options.limit}`;
     }
 
-    const comments = await cosmosDB.queryItems('comments', querySpec);
+    const comments = await cosmosDB.queryItems('comments', querySpec, { partitionKey: imageId });
     return comments.map(comment => new Comment(comment));
   }
 

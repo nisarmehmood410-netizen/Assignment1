@@ -47,7 +47,7 @@ class Notification {
       querySpec.query += ` OFFSET 0 LIMIT ${options.limit}`;
     }
 
-    const notifications = await cosmosDB.queryItems('notifications', querySpec);
+    const notifications = await cosmosDB.queryItems('notifications', querySpec, { partitionKey: recipientId });
     return notifications.map(notification => new Notification(notification));
   }
 
@@ -61,7 +61,7 @@ class Notification {
       querySpec.query += ` OFFSET 0 LIMIT ${options.limit}`;
     }
 
-    const notifications = await cosmosDB.queryItems('notifications', querySpec);
+    const notifications = await cosmosDB.queryItems('notifications', querySpec, { partitionKey: recipientId });
     return notifications.map(notification => new Notification(notification));
   }
 

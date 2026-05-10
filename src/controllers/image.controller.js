@@ -3,7 +3,6 @@ const Comment = require('../models/Comment');
 const Rating = require('../models/Rating');
 const Notification = require('../models/Notification');
 const { uploadImage } = require('../services/image.service');
-const { getCachedValue, setCachedValue, clearByPattern } = require('../services/cache.service');
 const buildPagination = require('../utils/pagination');
 
 function normalizePeople(people) {
@@ -39,9 +38,6 @@ async function upload(req, res, next) {
       creatorId: req.user.id
     });
 
-    clearByPattern('images:*').catch(() => {});
-    clearByPattern('search:*').catch(() => {});
-
     return res.status(201).json({
       message: 'Image uploaded successfuly',
       image
@@ -56,13 +52,6 @@ async function listImages(req, res, next) {
     const { page, limit } = req.query;
     const { creatorId } = req.query;
     const pagination = buildPagination(page, limit);
-
-    const cacheKey = `images:${pagination.page}:${pagination.limit}:${creatorId || 'all'}`;
-    const cachedPayload = await getCachedValue(cacheKey);
-
-    if (cachedPayload) {
-      return res.status(200).json(cachedPayload);
-    }
 
     let images;
     let total = 0;
@@ -86,8 +75,6 @@ async function listImages(req, res, next) {
       totalPages: Math.ceil(total / pagination.limit),
       data: images
     };
-
-    await setCachedValue(cacheKey, payload, 90);
 
     return res.status(200).json(payload);
   } catch (error) {
@@ -137,10 +124,7 @@ async function addComment(req, res, next) {
     });
 
     image.commentCount += 1;
-    await image.save();
-
-    await clearByPattern('images:*');
-    await clearByPattern('search:*');
+    await image.update({});
 
     await Notification.createCommentNotification(
       image.id,
@@ -188,10 +172,7 @@ async function addRating(req, res, next) {
 
     image.averageRating = stats.averageRating || 0;
     image.ratingCount = stats.ratingCount || 0;
-    await image.save();
-
-    await clearByPattern('images:*');
-    await clearByPattern('search:*');
+    await image.update({});
 
     if (isNewRating) {
       await Notification.createLikeNotification(
@@ -219,13 +200,6 @@ async function searchImages(req, res, next) {
       return res.status(400).json({ message: 'Search query is required' });
     }
 
-    const cacheKey = `search:${searchQuery.toLowerCase()}`;
-    const cachedPayload = await getCachedValue(cacheKey);
-
-    if (cachedPayload) {
-      return res.status(200).json(cachedPayload);
-    }
-
     const images = await Image.search(searchQuery, { limit: 20 });
 
     const payload = {
@@ -233,8 +207,6 @@ async function searchImages(req, res, next) {
       count: images.length,
       data: images
     };
-
-    await setCachedValue(cacheKey, payload, 120);
 
     return res.status(200).json(payload);
   } catch (error) {

@@ -44,7 +44,7 @@ class Rating {
       querySpec.query += ` OFFSET 0 LIMIT ${options.limit}`;
     }
 
-    const ratings = await cosmosDB.queryItems('ratings', querySpec);
+    const ratings = await cosmosDB.queryItems('ratings', querySpec, { partitionKey: imageId });
     return ratings.map(rating => new Rating(rating));
   }
 
@@ -53,7 +53,8 @@ class Rating {
       parameters: [
         { name: '@userId', value: userId },
         { name: '@imageId', value: imageId }
-      ]
+      ],
+      partitionKey: imageId
     });
     return rating ? new Rating(rating) : null;
   }
@@ -84,7 +85,7 @@ class Rating {
   static async aggregateStats(imageId) {
     const query = 'SELECT AVG(c.rating) as averageRating, COUNT(1) as ratingCount FROM c WHERE c.type = \'rating\' AND c.imageId = @imageId';
     const parameters = [{ name: '@imageId', value: imageId }];
-    const results = await cosmosDB.queryItems('ratings', { query, parameters });
+    const results = await cosmosDB.queryItems('ratings', { query, parameters }, { partitionKey: imageId });
     return results[0] || { averageRating: 0, ratingCount: 0 };
   }
 
@@ -120,7 +121,7 @@ class Rating {
       parameters: [{ name: '@imageId', value: imageId }]
     };
 
-    const results = await cosmosDB.queryItems('ratings', querySpec);
+    const results = await cosmosDB.queryItems('ratings', querySpec, { partitionKey: imageId });
     const result = results[0];
 
     return {

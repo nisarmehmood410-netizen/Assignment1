@@ -10,7 +10,7 @@ if (env.redisHost && env.redisPassword) {
     port: Number(env.redisPort),
     password: env.redisPassword,
     tls: {},
-    lazyConnect: true,
+    retryStrategy: null,
     connectTimeout: 10000,
     maxRetriesPerRequest: 0,
     enableOfflineQueue: false,
@@ -46,37 +46,17 @@ async function validateRedisConnection() {
   }
 
   try {
-    // If already connected and ready, just test with ping
+    // Just check the status or perform a quick ping if it's already attempting to connect
     if (redisClient.status === 'ready') {
       const pong = await redisClient.ping();
-      if (pong === 'PONG') {
-        console.log('✅ Redis connection validated successfully');
-        return true;
-      }
+      return pong === 'PONG';
     }
 
-    // Try to connect with timeout
-    const connectPromise = redisClient.connect();
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Connection timeout')), 5000)
-    );
-
-    await Promise.race([connectPromise, timeoutPromise]);
-
-    // Test connection with ping
-    const pong = await redisClient.ping();
-    if (pong === 'PONG') {
-      console.log('✅ Redis connection validated successfully');
-      return true;
-    }
+    // If it's not ready, it will NOT automatically retry due to retryStrategy: null
+    // We just return false as we don't want to force a manual connection with retries
     return false;
   } catch (error) {
-    if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
-      console.error('Redis connection timeout - server may be unreachable');
-      console.error('   Check your REDIS_HOST, REDIS_PORT, and network connectivity');
-    } else {
-      console.error('Redis connection validation failed:', error.message);
-    }
+    console.error('Redis connection validation failed:', error.message);
     return false;
   }
 }
