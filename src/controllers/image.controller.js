@@ -21,79 +21,6 @@ function normalizePeople(people) {
     .filter(Boolean);
 }
 
-/**
- * @swagger
- * /api/images/upload:
- *   post:
- *     summary: Upload a new image
- *     tags: [Images]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         multipart/form-data:
- *           schema:
- *             type: object
- *             required:
- *               - image
- *               - title
- *             properties:
- *               image:
- *                 type: string
- *                 format: binary
- *                 description: Image file to upload (max 5MB)
- *               title:
- *                 type: string
- *                 maxLength: 120
- *                 description: Image title
- *                 example: Sunset at the beach
- *               caption:
- *                 type: string
- *                 maxLength: 500
- *                 description: Image description or caption
- *                 example: Beautiful sunset captured during evening walk
- *               location:
- *                 type: string
- *                 maxLength: 120
- *                 description: Where the photo was taken
- *                 example: Santa Monica Beach, CA
- *               people:
- *                 type: string
- *                 description: Comma-separated list of people tagged in the photo
- *                 example: John Doe, Jane Smith
- *     responses:
- *       201:
- *         description: Image uploaded successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Image uploaded successfully
- *                 image:
- *                   $ref: '#/components/schemas/Image'
- *       400:
- *         description: Validation error or missing file
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       401:
- *         description: Authentication required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       403:
- *         description: Creator role required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
 async function upload(req, res, next) {
   try {
     if (!req.file) {
@@ -112,11 +39,11 @@ async function upload(req, res, next) {
       creatorId: req.user.id
     });
 
-    await clearByPattern('images:*');
-    await clearByPattern('search:*');
+    clearByPattern('images:*').catch(() => {});
+    clearByPattern('search:*').catch(() => {});
 
     return res.status(201).json({
-      message: 'Image uploaded successfully',
+      message: 'Image uploaded successfuly',
       image
     });
   } catch (error) {
@@ -124,47 +51,6 @@ async function upload(req, res, next) {
   }
 }
 
-/**
- * @swagger
- * /api/images:
- *   get:
- *     summary: Get paginated list of images
- *     tags: [Images]
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           minimum: 1
- *           default: 1
- *         description: Page number for pagination
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           minimum: 1
- *           maximum: 50
- *           default: 10
- *         description: Number of images per page
- *       - in: query
- *         name: creatorId
- *         schema:
- *           type: string
- *         description: Filter images by creator ID
- *     responses:
- *       200:
- *         description: List of images retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/PaginatedResponse'
- *       400:
- *         description: Invalid parameters
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
 async function listImages(req, res, next) {
   try {
     const { page, limit } = req.query;
@@ -182,13 +68,11 @@ async function listImages(req, res, next) {
     let total = 0;
 
     if (creatorId) {
-      // Get images by creator
       images = await Image.findByCreatorId(creatorId, {
         limit: pagination.limit
       });
       total = images.length;
     } else {
-      // Get all recent images
       images = await Image.findRecent({
         limit: pagination.limit
       });
@@ -211,51 +95,6 @@ async function listImages(req, res, next) {
   }
 }
 
-/**
- * @swagger
- * /api/images/{id}:
- *   get:
- *     summary: Get image by ID with comments and ratings
- *     tags: [Images]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: Image ID
- *     responses:
- *       200:
- *         description: Image retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               allOf:
- *                 - $ref: '#/components/schemas/Image'
- *                 - type: object
- *                   properties:
- *                     comments:
- *                       type: array
- *                       items:
- *                         $ref: '#/components/schemas/Comment'
- *                     ratings:
- *                       type: array
- *                       items:
- *                         $ref: '#/components/schemas/Rating'
- *       400:
- *         description: Invalid image ID
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       404:
- *         description: Image not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
 async function getImageById(req, res, next) {
   try {
     const { id } = req.params;
@@ -281,73 +120,6 @@ async function getImageById(req, res, next) {
   }
 }
 
-/**
- * @swagger
- * /api/images/{id}/comments:
- *   post:
- *     summary: Add a comment to an image
- *     tags: [Images]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: Image ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - text
- *             properties:
- *               text:
- *                 type: string
- *                 maxLength: 300
- *                 description: Comment text
- *                 example: Amazing photo! Love the colors.
- *     responses:
- *       201:
- *         description: Comment added successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Comment added successfully
- *                 comment:
- *                   $ref: '#/components/schemas/Comment'
- *       400:
- *         description: Validation error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       401:
- *         description: Authentication required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       403:
- *         description: Consumer role required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       404:
- *         description: Image not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
 async function addComment(req, res, next) {
   try {
     const { id } = req.params;
@@ -370,7 +142,6 @@ async function addComment(req, res, next) {
     await clearByPattern('images:*');
     await clearByPattern('search:*');
 
-    // Create notification for image owner
     await Notification.createCommentNotification(
       image.id,
       req.user.id,
@@ -387,84 +158,6 @@ async function addComment(req, res, next) {
   }
 }
 
-/**
- * @swagger
- * /api/images/{id}/rate:
- *   post:
- *     summary: Rate an image
- *     tags: [Images]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: Image ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - rating
- *             properties:
- *               rating:
- *                 type: integer
- *                 minimum: 1
- *                 maximum: 5
- *                 description: Rating value from 1 to 5
- *                 example: 4
- *     responses:
- *       200:
- *         description: Rating submitted successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Rating submitted successfully
- *                 averageRating:
- *                   type: number
- *                   format: float
- *                   minimum: 0
- *                   maximum: 5
- *                   description: Updated average rating
- *                   example: 4.2
- *                 ratingCount:
- *                   type: integer
- *                   minimum: 0
- *                   description: Total number of ratings
- *                   example: 15
- *       400:
- *         description: Validation error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       401:
- *         description: Authentication required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       403:
- *         description: Consumer role required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       404:
- *         description: Image not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
 async function addRating(req, res, next) {
   try {
     const { id } = req.params;
@@ -476,7 +169,6 @@ async function addRating(req, res, next) {
 
     const { rating } = req.body;
 
-    // Check for existing rating by this user
     const existingRating = await Rating.findByUserAndImage(req.user.id, id);
     let isNewRating = false;
 
@@ -501,7 +193,6 @@ async function addRating(req, res, next) {
     await clearByPattern('images:*');
     await clearByPattern('search:*');
 
-    // Create notification for image owner (only on first rating)
     if (isNewRating) {
       await Notification.createLikeNotification(
         image.id,
@@ -520,34 +211,6 @@ async function addRating(req, res, next) {
   }
 }
 
-/**
- * @swagger
- * /api/search:
- *   get:
- *     summary: Search images by title or caption
- *     tags: [Search]
- *     parameters:
- *       - in: query
- *         name: q
- *         required: true
- *         schema:
- *           type: string
- *         description: Search query string
- *         example: sunset
- *     responses:
- *       200:
- *         description: Search results retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/SearchResponse'
- *       400:
- *         description: Missing search query
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
 async function searchImages(req, res, next) {
   try {
     const searchQuery = String(req.query.q || '').trim();

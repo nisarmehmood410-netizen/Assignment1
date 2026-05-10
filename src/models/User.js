@@ -1,36 +1,3 @@
-/**
- * @swagger
- * components:
- *   schemas:
- *     User:
- *       type: object
- *       required:
- *         - username
- *         - email
- *         - password
- *         - role
- *       properties:
- *         id:
- *           type: string
- *           description: User unique identifier
- *         username:
- *           type: string
- *           minLength: 3
- *           maxLength: 30
- *           description: User username
- *         email:
- *           type: string
- *           format: email
- *           description: User email address
- *         role:
- *           type: string
- *           enum: [creator, consumer]
- *           description: User role in the system
- *         createdAt:
- *           type: string
- *           format: date-time
- *           description: Account creation timestamp
- */
 const bcrypt = require('bcryptjs');
 const cosmosDB = require('../config/cosmos');
 const { v4: uuidv4 } = require('uuid');

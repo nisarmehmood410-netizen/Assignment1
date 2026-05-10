@@ -4,15 +4,12 @@ const cors = require('cors');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
-const swaggerUi = require('swagger-ui-express');
-
 const authRoutes = require('./routes/auth.routes');
 const imageRoutes = require('./routes/image.routes');
 const searchRoutes = require('./routes/search.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const { notFound, errorHandler } = require('./middleware/error.middleware');
 const env = require('./config/env');
-const swaggerSpecs = require('./config/swagger');
 
 const app = express();
 
@@ -60,17 +57,6 @@ app.get('/health', (req, res) => {
   const statusCode = redisStatus.connected ? 200 : 200; // Keep 200 but show degraded state
 
   res.status(statusCode).json(health);
-});
-
-// Swagger Documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'Photo Sharing API Documentation'
-}));
-
-app.get('/api-docs.json', (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
-  res.send(swaggerSpecs);
 });
 
 app.use('/api/auth', authRoutes);

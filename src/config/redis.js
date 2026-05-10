@@ -11,13 +11,14 @@ if (env.redisHost && env.redisPassword) {
     password: env.redisPassword,
     tls: {},
     lazyConnect: true,
-    connectTimeout: 10000
+    connectTimeout: 10000,
+    maxRetriesPerRequest: 0,
+    enableOfflineQueue: false,
+    reconnectOnError: () => false
   });
 
-  // Enhanced event listeners for better monitoring
   redisClient.on('error', (err) => {
     console.error('Redis connection error:', err.message);
-    console.error('Redis error details:', err);
   });
 
   redisClient.on('connect', () => {
@@ -30,10 +31,6 @@ if (env.redisHost && env.redisPassword) {
 
   redisClient.on('close', () => {
     console.warn('Redis connection closed');
-  });
-
-  redisClient.on('reconnecting', (ms) => {
-    console.log(`🔄 Redis reconnecting in ${ms}ms`);
   });
 
   redisClient.on('end', () => {

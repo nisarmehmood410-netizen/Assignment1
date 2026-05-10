@@ -30,7 +30,7 @@ async function optimizeImage(buffer) {
   return sharp(buffer)
     .rotate()
     .resize({ width: 1600, withoutEnlargement: true })
-    .jpeg({ quality: 82, mozjpeg: true })
+    .jpeg({ quality: 82 })
     .toBuffer();
 }
 
